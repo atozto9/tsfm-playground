@@ -9,7 +9,19 @@
 필수 도구:
 
 - Python 3.10+
+
+권장 도구:
+
 - [`uv`](https://docs.astral.sh/uv/)
+
+서버에 `uv`가 없으면 먼저 설치한다. 시스템 Python에 직접 설치하기보다 사용자
+site 또는 가상환경 안에 설치하는 것을 권장한다.
+
+```bash
+python -m pip install --user uv
+# PATH 설정이 안 된 환경에서는 아래처럼 실행할 수 있다.
+python -m uv --version
+```
 
 개발/테스트 의존성까지 설치한다.
 
@@ -21,6 +33,23 @@ Chronos-2를 실제로 실행하려면 opt-in extra를 함께 설치한다.
 
 ```bash
 uv sync --extra dev --extra chronos2
+```
+
+### uv 없이 pip만 사용하는 경우
+
+서버 정책상 `uv` 설치가 어렵다면 표준 venv와 pip로도 실행할 수 있다.
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -e ".[dev]"
+```
+
+Chronos-2까지 설치하려면 extra를 함께 설치한다.
+
+```bash
+python -m pip install -e ".[dev,chronos2]"
 ```
 
 ## 실행
