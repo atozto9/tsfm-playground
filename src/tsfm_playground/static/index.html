@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>tsfm-playground</title>
+  <script>
+    (function () {
+      var key = "tsfm-playground.theme";
+      var stored = "system";
+      try { stored = localStorage.getItem(key) || "system"; } catch (_err) {}
+      if (stored !== "light" && stored !== "dark" && stored !== "system") stored = "system";
+      var prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+      var resolved = stored === "system" ? (prefersDark ? "dark" : "light") : stored;
+      document.documentElement.dataset.theme = resolved;
+      document.documentElement.style.colorScheme = resolved;
+    })();
+  </script>
+  <link rel="stylesheet" href="app.css" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" sizes="any" />
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js" defer></script>
+  <script src="theme_utils.js" defer></script>
+  <script src="forecast_utils.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <header class="header">
+    <div class="header-left">
+      <h1>tsfm-playground</h1>
+      <div class="model-selector">
+        <select id="model-select" disabled>
+          <option value="">loading models...</option>
+        </select>
+        <span id="switch-status" class="switch-status"></span>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="theme-control">
+        <span class="theme-label">Theme</span>
+        <div class="theme-segmented" role="radiogroup" aria-label="Theme mode">
+          <input class="theme-input" id="theme-system" type="radio" name="theme-mode" value="system" checked />
+          <label class="theme-chip" for="theme-system">System</label>
+          <input class="theme-input" id="theme-light" type="radio" name="theme-mode" value="light" />
+          <label class="theme-chip" for="theme-light">Light</label>
+          <input class="theme-input" id="theme-dark" type="radio" name="theme-mode" value="dark" />
+          <label class="theme-chip" for="theme-dark">Dark</label>
+        </div>
+      </div>
+      <div id="backend-info" class="backend-info">loading backend...</div>
+    </div>
+  </header>
+
+  <main class="workbench">
+    <section class="pane input-pane">
+      <div class="section-head input-head">
+        <div class="title-stack">
+          <h2>Input Series</h2>
+          <span id="series-count" class="hint">0 series</span>
+        </div>
+        <div class="input-toolbar">
+          <button type="button" id="new-series-btn" class="primary">New</button>
+          <button type="button" id="paste-btn">Paste</button>
+          <button type="button" id="demo-btn">Wave</button>
+          <button type="button" id="upload-btn">Upload</button>
+          <button type="button" id="clear-series-btn">Clear</button>
+          <input id="file-input" type="file" hidden accept=".json,.csv,.tsv,.npy,.txt" />
+        </div>
+      </div>
+
+      <div id="series-editor" class="series-editor">
+        <div class="subsection-head editor-head">
+          <div class="title-stack">
+            <h3 id="series-editor-title">New series</h3>
+            <span id="series-editor-status" class="hint">manual</span>
+          </div>
+          <button type="button" id="cancel-edit-btn" hidden>Cancel</button>
+        </div>
+        <div class="editor-mode-segmented" role="radiogroup" aria-label="Series input mode">
+          <input
+            class="editor-mode-input"
+            id="editor-mode-text"
+            type="radio"
+            name="editor-mode"
+            value="text"
+            checked
+          />
+          <label class="editor-mode-chip" for="editor-mode-text">Text</label>
+          <input
+            class="editor-mode-input"
+            id="editor-mode-draw"
+            type="radio"
+            name="editor-mode"
+            value="draw"
+          />
+          <label class="editor-mode-chip" for="editor-mode-draw">Draw</label>
+        </div>
+        <div id="drop-zone" class="drop-zone editor-text-panel">
+          <label>Values
+            <textarea id="values-input" rows="5" placeholder="1, 2, 3, 5, 8, 13"></textarea>
+          </label>
+        </div>
+        <div id="draw-editor-panel" class="draw-editor-panel" hidden>
+          <div class="draw-scope-row">
+            <div class="draw-scope-segmented" role="radiogroup" aria-label="Draw scope">
+              <input
+                class="draw-scope-input"
+                id="draw-scope-whole"
+                type="radio"
+                name="draw-scope"
+                value="whole"
+                checked
+              />
+              <label class="draw-scope-chip" for="draw-scope-whole">Whole</label>
+              <input
+                class="draw-scope-input"
+                id="draw-scope-focus"
+                type="radio"
+                name="draw-scope"
+                value="focus"
+              />
+              <label class="draw-scope-chip" for="draw-scope-focus">Focus</label>
+            </div>
+            <span id="draw-span-chip" class="context-summary">whole</span>
+          </div>
+          <div id="draw-focus-panel" class="draw-focus-panel" hidden>
+            <div class="draw-overview-wrap">
+              <svg
+                id="draw-overview-canvas"
+                class="draw-overview-canvas"
+                viewBox="0 0 640 96"
+                preserveAspectRatio="none"
+                role="img"
+                aria-label="Select focus edit span"
+              >
+                <polyline id="draw-overview-line" class="draw-overview-line" points=""></polyline>
+                <rect id="draw-overview-mask-left" class="draw-overview-mask" x="0" y="0" width="0" height="96"></rect>
+                <rect id="draw-overview-mask-right" class="draw-overview-mask" x="0" y="0" width="0" height="96"></rect>
+                <rect id="draw-overview-brush" class="draw-overview-brush" x="0" y="0" width="0" height="96"></rect>
+                <rect id="draw-overview-left-handle" class="draw-overview-handle" x="0" y="8" width="8" height="80"></rect>
+                <rect id="draw-overview-right-handle" class="draw-overview-handle" x="0" y="8" width="8" height="80"></rect>
+              </svg>
+            </div>
+            <details class="draw-exact">
+              <summary>Exact span</summary>
+              <div class="draw-exact-grid">
+                <label>Start
+                  <input id="draw-span-start-input" type="number" min="0" step="1" value="0" />
+                </label>
+                <label>End
+                  <input id="draw-span-end-input" type="number" min="1" step="1" value="1" />
+                </label>
+              </div>
+            </details>
+          </div>
+          <div class="draw-controls">
+            <label>Length
+              <input id="draw-length-input" type="number" min="1" step="1" value="72" />
+            </label>
+            <label>Min
+              <input id="draw-min-input" type="number" step="any" value="0" />
+            </label>
+            <label>Max
+              <input id="draw-max-input" type="number" step="any" value="1" />
+            </label>
+          </div>
+          <div class="draw-surface-wrap">
+            <svg
+              id="draw-canvas"
+              class="draw-canvas"
+              viewBox="0 0 640 220"
+              preserveAspectRatio="none"
+              role="img"
+              aria-label="Draw series values"
+            >
+              <g id="draw-grid" class="draw-grid"></g>
+              <polyline id="draw-reference-line" class="draw-reference-line" points=""></polyline>
+              <polyline id="draw-line" class="draw-line" points=""></polyline>
+            </svg>
+          </div>
+          <div class="draw-actions">
+            <button type="button" id="draw-apply-btn">Apply</button>
+            <button type="button" id="draw-smooth-btn">Smooth</button>
+            <button type="button" id="draw-clear-btn">Clear</button>
+            <span id="draw-status" class="status">idle</span>
+          </div>
+        </div>
+        <div class="editor-grid">
+          <label>Name
+            <input id="series-name" type="text" placeholder="series name" />
+          </label>
+          <button type="button" id="add-series-btn" class="primary">Add Series</button>
+        </div>
+      </div>
+
+      <div class="input-section series-manager">
+        <div class="subsection-head">
+          <h3>Series</h3>
+          <span id="series-list-hint" class="hint">none</span>
+        </div>
+        <div id="series-list" class="series-list"></div>
+      </div>
+
+      <div class="input-section preview-panel">
+        <div class="subsection-head preview-head">
+          <h3>Preview</h3>
+          <span id="input-context-chip" class="context-summary">full</span>
+        </div>
+        <div id="input-chart" class="chart chart-small"></div>
+      </div>
+    </section>
+
+    <section class="pane controls-pane">
+      <div class="section-head">
+        <h2>Forecast</h2>
+        <span id="selection-hint" class="hint">0 selected</span>
+      </div>
+      <div class="grid-2">
+        <label>Horizon
+          <input id="horizon-input" type="number" min="1" max="10000" step="1" value="24" />
+        </label>
+        <label>Quantiles
+          <select id="quantiles-input">
+            <option value="0.1,0.5,0.9" selected>80% band · 0.1 / 0.5 / 0.9</option>
+            <option value="0.05,0.5,0.95">90% band · 0.05 / 0.5 / 0.95</option>
+            <option value="0.2,0.5,0.8">60% band · 0.2 / 0.5 / 0.8</option>
+            <option value="0.5">Median only · 0.5</option>
+          </select>
+        </label>
+      </div>
+      <div class="context-control">
+        <div class="context-row">
+          <span class="context-label">Context</span>
+          <div class="context-segmented" role="radiogroup" aria-label="Context mode">
+            <input
+              class="context-mode-input"
+              id="context-mode-full"
+              type="radio"
+              name="context-mode"
+              value="full"
+              checked
+            />
+            <label class="context-chip" for="context-mode-full">Full</label>
+            <input
+              class="context-mode-input"
+              id="context-mode-tail"
+              type="radio"
+              name="context-mode"
+              value="tail"
+            />
+            <label class="context-chip" for="context-mode-tail">Last N</label>
+            <input
+              class="context-mode-input"
+              id="context-mode-range"
+              type="radio"
+              name="context-mode"
+              value="range"
+            />
+            <label class="context-chip" for="context-mode-range">Range</label>
+          </div>
+          <span id="context-summary" class="context-summary">full</span>
+        </div>
+        <div id="context-tail-field" class="context-field" hidden>
+          <label>Last N
+            <input id="context-tail-input" type="number" min="1" step="1" placeholder="72" />
+          </label>
+        </div>
+        <div id="context-range-fields" class="context-range" hidden>
+          <label>Start
+            <input id="context-start-input" type="number" min="0" step="1" placeholder="0" />
+          </label>
+          <label>End
+            <input id="context-end-input" type="number" min="1" step="1" placeholder="72" />
+          </label>
+          <button type="button" id="clear-context-btn">Clear</button>
+        </div>
+      </div>
+      <details class="advanced">
+        <summary>Backend options JSON</summary>
+        <label>Target column
+          <input id="target-input" type="text" value="value" />
+        </label>
+        <textarea id="model-options-input" rows="5" placeholder='{"frequency": 0}'></textarea>
+      </details>
+      <div id="validation-msg" class="validation-msg"></div>
+      <div class="generate-bar">
+        <button type="button" id="forecast-btn" class="primary">Run Forecast</button>
+        <span id="status-msg" class="status" role="status"></span>
+      </div>
+    </section>
+
+    <section class="pane result-pane">
+      <div class="section-head">
+        <h2>Result</h2>
+        <div class="row">
+          <span id="result-meta" class="hint">idle</span>
+          <button type="button" id="copy-json-btn" disabled>Copy JSON</button>
+        </div>
+      </div>
+      <div id="result-chart" class="chart"></div>
+      <pre id="raw-json" class="raw-json">No forecast yet.</pre>
+    </section>
+  </main>
+</body>
+</html>

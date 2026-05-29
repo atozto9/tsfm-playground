@@ -1,0 +1,36 @@
+# Chronos-2 opt-in local config.
+# This config opens with a Chronos-2 multi-series demo while keeping the fake baseline available.
+#
+# Install with:
+#   uv sync --extra dev --extra chronos2
+# Run with:
+#   uv run tsfm-playground --config configs/chronos2-local.yaml --host 127.0.0.1 --port 7860
+
+server:
+  host: "0.0.0.0"
+  port: 7860
+
+forecast:
+  horizon: 24
+  quantiles: [0.1, 0.5, 0.9]
+  max_horizon: 1024
+
+serving:
+  session_timeout_s: 1800
+
+ui:
+  initial_demo: chronos2_multiseries
+
+models:
+  - id: "chronos2-amazon"
+    label: "Chronos-2 amazon/chronos-2"
+    backend: chronos2
+    model_id: "amazon/chronos-2"
+    device: "cpu"
+    preload: false
+    allow_remote_download: true
+    backend_options: {}
+  - id: "fake"
+    label: "Fake baseline"
+    backend: fake
+    preload: true

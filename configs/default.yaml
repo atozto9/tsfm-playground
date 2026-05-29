@@ -1,0 +1,56 @@
+# tsfm-playground default config.
+# Defaults avoid remote downloads and use the fake backend.
+
+server:
+  host: "0.0.0.0"
+  port: 7860
+
+backend:
+  name: fake
+  model_path: null
+  model_id: null
+  library_path: null
+  adapter_class: null
+  device: null
+  allow_remote_download: false
+  backend_options: {}
+
+forecast:
+  horizon: 24
+  quantiles: [0.1, 0.5, 0.9]
+  max_horizon: 10000
+
+serving:
+  session_timeout_s: 1800
+
+ui:
+  initial_demo: wave
+
+# Example multi-model config:
+#
+# models:
+#   - id: "fake"
+#     label: "Fake baseline"
+#     backend: fake
+#     preload: true
+#   - id: "chronos2-local"
+#     label: "Chronos-2 local"
+#     backend: chronos2
+#     library_path: "../chronos-forecasting/src"
+#     model_path: "/models/chronos-2"
+#     preload: false
+#     allow_remote_download: false
+#   - id: "timesfm-local"
+#     label: "TimesFM local"
+#     backend: timesfm
+#     library_path: "../timesfm/src"
+#     model_path: "/models/timesfm-2.5"
+#     preload: false
+#     allow_remote_download: false
+#   - id: "custom-local"
+#     label: "Custom adapter"
+#     backend: custom
+#     library_path: "../my-model/src"
+#     adapter_class: "my_model.playground:Adapter"
+#     model_path: "/models/custom"
+#     preload: false
